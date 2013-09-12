@@ -1,0 +1,24 @@
+{
+    "name": "ignited/wse-php",
+    "type": "library",
+    "description": "Composer fork of the wse-php package",
+    "authors": [
+        {
+            "name": "Alex Whiteside",
+            "email": "alexwhiteside@ignitedlabs.com.au"
+        }
+    ],
+    "keywords": ["soap", "ws"],
+    "license": "MIT",
+    "homepage": "http://www.ignitedlabs.com.au",
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-0": {
+            "": "src/"
+        }
+    },
+    "require": {
+        "php": ">=5.3.3",
+        "rnijveld/xmlseclibs": "dev-master"
+    }
+}
