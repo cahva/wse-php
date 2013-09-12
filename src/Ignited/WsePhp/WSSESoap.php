@@ -96,7 +96,7 @@ class WSSESoap {
         $this->envelope = $doc->documentElement; 
         $this->soapNS = $this->envelope->namespaceURI; 
         $this->soapPFX = $this->envelope->prefix; 
-        $this->SOAPXPath = new DOMXPath($doc); 
+        $this->SOAPXPath = new \DOMXPath($doc); 
         $this->SOAPXPath->registerNamespace('wssoap', $this->soapNS); 
         $this->SOAPXPath->registerNamespace('wswsse', WSSESoap::WSSENS); 
         $this->locateSecurityHeader($bMustUnderstand, $setActor); 
@@ -131,7 +131,7 @@ class WSSESoap {
         $token->appendChild($username); 
          
         /* Generate nonce - create a 256 bit session key to be used */ 
-        $objKey = new XMLSecurityKey(XMLSecurityKey::AES256_CBC); 
+        $objKey = new \XMLSecurityKey(\XMLSecurityKey::AES256_CBC); 
         $nonce = $objKey->generateSessionKey(); 
         unset($objKey); 
         $createdate = gmdate("Y-m-d\TH:i:s").'Z'; 
@@ -156,13 +156,13 @@ class WSSESoap {
 
     public function addBinaryToken($cert, $isPEMFormat=TRUE, $isDSig=TRUE) { 
         $security = $this->locateSecurityHeader(); 
-        $data = XMLSecurityDSig::get509XCert($cert, $isPEMFormat); 
+        $data = \XMLSecurityDSig::get509XCert($cert, $isPEMFormat); 
 
         $token = $this->soapDoc->createElementNS(WSSESoap::WSSENS, WSSESoap::WSSEPFX.':BinarySecurityToken', $data); 
         $security->insertBefore($token, $security->firstChild); 
 
         $token->setAttribute('EncodingType', 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary'); 
-        $token->setAttributeNS(WSSESoap::WSUNS, WSSESoap::WSUPFX.':Id', XMLSecurityDSig::generate_GUID()); 
+        $token->setAttributeNS(WSSESoap::WSUNS, WSSESoap::WSUPFX.':Id', \XMLSecurityDSig::generate_GUID()); 
         $token->setAttribute('ValueType', 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3'); 
          
         return $token; 
@@ -172,7 +172,7 @@ class WSSESoap {
         if (! ($token instanceof DOMElement)) { 
             throw new Exception('Invalid parameter: BinarySecurityToken element expected'); 
         } 
-        $objXMLSecDSig = new XMLSecurityDSig(); 
+        $objXMLSecDSig = new \XMLSecurityDSig(); 
         if ($objDSig = $objXMLSecDSig->locateSignature($this->soapDoc)) { 
             $tokenURI = '#'.$token->getAttributeNS(WSSESoap::WSUNS, "Id"); 
             $this->SOAPXPath->registerNamespace('secdsig', XMLSecurityDSig::XMLDSIGNS); 
@@ -195,9 +195,9 @@ class WSSESoap {
     } 
 
     public function signSoapDoc($objKey, $options = NULL) {
-        $objDSig = new XMLSecurityDSig(); 
+        $objDSig = new \XMLSecurityDSig(); 
 
-        $objDSig->setCanonicalMethod(XMLSecurityDSig::EXC_C14N); 
+        $objDSig->setCanonicalMethod(\XMLSecurityDSig::EXC_C14N); 
 
         $arNodes = array(); 
         foreach ($this->secNode->childNodes AS $node) { 
@@ -222,7 +222,7 @@ class WSSESoap {
             } 
         } 
         
-        $algorithm = XMLSecurityDSig::SHA1;
+        $algorithm = \XMLSecurityDSig::SHA1;
         if (is_array($options) && isset($options["algorithm"])) {
             $algorithm = $options["algorithm"];
         }
@@ -244,23 +244,23 @@ class WSSESoap {
                 if (! empty($options["KeyInfo"]["X509SubjectKeyIdentifier"])) {
                     $sigNode = $this->secNode->firstChild->nextSibling;
                     $objDoc = $sigNode->ownerDocument;
-                    $keyInfo = $sigNode->ownerDocument->createElementNS(XMLSecurityDSig::XMLDSIGNS, 'ds:KeyInfo');
+                    $keyInfo = $sigNode->ownerDocument->createElementNS(\XMLSecurityDSig::XMLDSIGNS, 'ds:KeyInfo');
                     $sigNode->appendChild($keyInfo);
-				    $tokenRef = $objDoc->createElementNS(WSSESoap::WSSENS, WSSESoap::WSSEPFX . ':SecurityTokenReference');
-				    $keyInfo->appendChild($tokenRef);
-				    $reference = $objDoc->createElementNS(WSSESoap::WSSENS, WSSESoap::WSSEPFX . ':KeyIdentifier');
-				    $reference->setAttribute("ValueType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509SubjectKeyIdentifier");
-				    $reference->setAttribute("EncodingType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
+                    $tokenRef = $objDoc->createElementNS(WSSESoap::WSSENS, WSSESoap::WSSEPFX . ':SecurityTokenReference');
+                    $keyInfo->appendChild($tokenRef);
+                    $reference = $objDoc->createElementNS(WSSESoap::WSSENS, WSSESoap::WSSEPFX . ':KeyIdentifier');
+                    $reference->setAttribute("ValueType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509SubjectKeyIdentifier");
+                    $reference->setAttribute("EncodingType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
                     $tokenRef->appendChild($reference);
-					$x509 = openssl_x509_parse($objKey->getX509Certificate());
-					$keyid = $x509["extensions"]["subjectKeyIdentifier"];
-					$arkeyid = split(":", $keyid);
-					$data = "";
-					foreach ($arkeyid AS $hexchar) {
-					    $data .= chr(hexdec($hexchar));
-					}
-					$dataNode = new DOMText(base64_encode($data));
-					$reference->appendChild($dataNode);
+                    $x509 = openssl_x509_parse($objKey->getX509Certificate());
+                    $keyid = $x509["extensions"]["subjectKeyIdentifier"];
+                    $arkeyid = split(":", $keyid);
+                    $data = "";
+                    foreach ($arkeyid AS $hexchar) {
+                        $data .= chr(hexdec($hexchar));
+                    }
+                    $dataNode = new DOMText(base64_encode($data));
+                    $reference->appendChild($dataNode);
                 }
             }
         }
@@ -294,7 +294,7 @@ class WSSESoap {
         } 
 
         $security->insertBefore($encKey, $lastToken); 
-        $key->guid = XMLSecurityDSig::generate_GUID(); 
+        $key->guid = \XMLSecurityDSig::generate_GUID(); 
         $encKey->setAttribute('Id', $key->guid); 
         $encMethod = $encKey->firstChild; 
         while ($encMethod && $encMethod->localName != 'EncryptionMethod') { 
@@ -312,19 +312,19 @@ class WSSESoap {
         if (is_array($options)) {
             if (! empty($options["KeyInfo"]) ) {
                 if (! empty($options["KeyInfo"]["X509SubjectKeyIdentifier"])) {
-				    $reference = $objDoc->createElementNS(WSSESoap::WSSENS, WSSESoap::WSSEPFX . ':KeyIdentifier');
-				    $reference->setAttribute("ValueType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509SubjectKeyIdentifier");
-				    $reference->setAttribute("EncodingType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
-				    $tokenRef->appendChild($reference);
-					$x509 = openssl_x509_parse($token->getX509Certificate());
-					$keyid = $x509["extensions"]["subjectKeyIdentifier"];
-					$arkeyid = split(":", $keyid);
-					$data = "";
-					foreach ($arkeyid AS $hexchar) {
-					    $data .= chr(hexdec($hexchar));
-					}
-					$dataNode = new DOMText(base64_encode($data));
-					$reference->appendChild($dataNode);
+                    $reference = $objDoc->createElementNS(WSSESoap::WSSENS, WSSESoap::WSSEPFX . ':KeyIdentifier');
+                    $reference->setAttribute("ValueType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509SubjectKeyIdentifier");
+                    $reference->setAttribute("EncodingType", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
+                    $tokenRef->appendChild($reference);
+                    $x509 = openssl_x509_parse($token->getX509Certificate());
+                    $keyid = $x509["extensions"]["subjectKeyIdentifier"];
+                    $arkeyid = split(":", $keyid);
+                    $data = "";
+                    foreach ($arkeyid AS $hexchar) {
+                        $data .= chr(hexdec($hexchar));
+                    }
+                    $dataNode = new DOMText(base64_encode($data));
+                    $reference->appendChild($dataNode);
                     return TRUE;
                 }
             }
@@ -342,7 +342,7 @@ class WSSESoap {
         $refList = NULL; 
         $child = $baseNode->firstChild; 
         while($child) { 
-            if (($child->namespaceURI == XMLSecEnc::XMLENCNS) && ($child->localName == 'ReferenceList')) { 
+            if (($child->namespaceURI == \XMLSecEnc::XMLENCNS) && ($child->localName == 'ReferenceList')) { 
                 $refList = $child; 
                 break; 
             } 
@@ -350,17 +350,17 @@ class WSSESoap {
         } 
         $doc = $baseNode->ownerDocument; 
         if (is_null($refList)) { 
-            $refList = $doc->createElementNS(XMLSecEnc::XMLENCNS, 'xenc:ReferenceList'); 
+            $refList = $doc->createElementNS(\XMLSecEnc::XMLENCNS, 'xenc:ReferenceList'); 
             $baseNode->appendChild($refList); 
         } 
-        $dataref = $doc->createElementNS(XMLSecEnc::XMLENCNS, 'xenc:DataReference'); 
+        $dataref = $doc->createElementNS(\XMLSecEnc::XMLENCNS, 'xenc:DataReference'); 
         $refList->appendChild($dataref); 
         $dataref->setAttribute('URI', '#'.$guid); 
     } 
 
     public function EncryptBody($siteKey, $objKey, $token) { 
 
-        $enc = new XMLSecEnc(); 
+        $enc = new \XMLSecEnc(); 
         foreach ($this->envelope->childNodes AS $node) { 
             if ($node->namespaceURI == $this->soapNS && $node->localName == 'Body') { 
                 break; 
@@ -370,11 +370,11 @@ class WSSESoap {
         /* encrypt the symmetric key */ 
         $enc->encryptKey($siteKey, $objKey, FALSE); 
 
-        $enc->type = XMLSecEnc::Content; 
+        $enc->type = \XMLSecEnc::Content; 
         /* Using the symmetric key to actually encrypt the data */ 
         $encNode = $enc->encryptNode($objKey); 
 
-        $guid = XMLSecurityDSig::generate_GUID(); 
+        $guid = \XMLSecurityDSig::generate_GUID(); 
         $encNode->setAttribute('Id', $guid); 
 
         $refNode = $encNode->firstChild; 
@@ -391,95 +391,95 @@ class WSSESoap {
      
     public function encryptSoapDoc($siteKey, $objKey, $options=NULL, $encryptSignature=TRUE) {
 
-		$enc = new XMLSecEnc();
+        $enc = new \XMLSecEnc();
 
-		$xpath = new DOMXPath($this->envelope->ownerDocument);
-		if ($encryptSignature ==  FALSE) {
-			$nodes = $xpath->query('//*[local-name()="Body"]');
-		} else {
-			$nodes = $xpath->query('//*[local-name()="Signature"] | //*[local-name()="Body"]');
-		}
-		
-		foreach ($nodes AS $node) {
-			$type = XMLSecEnc::Element;
-			$name = $node->localName;
-			if ($name == "Body") {
-				$type = XMLSecEnc::Content;
-			}
-			$enc->addReference($name, $node, $type);
-		}
+        $xpath = new \DOMXPath($this->envelope->ownerDocument);
+        if ($encryptSignature ==  FALSE) {
+            $nodes = $xpath->query('//*[local-name()="Body"]');
+        } else {
+            $nodes = $xpath->query('//*[local-name()="Signature"] | //*[local-name()="Body"]');
+        }
+        
+        foreach ($nodes AS $node) {
+            $type = \XMLSecEnc::Element;
+            $name = $node->localName;
+            if ($name == "Body") {
+                $type = \XMLSecEnc::Content;
+            }
+            $enc->addReference($name, $node, $type);
+        }
 
-		$enc->encryptReferences($objKey);
-		
-		$enc->encryptKey($siteKey, $objKey, false);
-		
-		$nodes = $xpath->query('//*[local-name()="Security"]');
-		$signode = $nodes->item(0);
-		$this->addEncryptedKey($signode, $enc, $siteKey, $options);
+        $enc->encryptReferences($objKey);
+        
+        $enc->encryptKey($siteKey, $objKey, false);
+        
+        $nodes = $xpath->query('//*[local-name()="Security"]');
+        $signode = $nodes->item(0);
+        $this->addEncryptedKey($signode, $enc, $siteKey, $options);
     }
     
     public function decryptSoapDoc($doc, $options) {
 
-		$privKey = NULL;
-		$privKey_isFile = FALSE;
-		$privKey_isCert = FALSE;
-		
-		if (is_array($options)) {
-			$privKey = (! empty($options["keys"]["private"]["key"]) ? $options["keys"]["private"]["key"] : NULL);
-			$privKey_isFile = (! empty($options["keys"]["private"]["isFile"]) ? TRUE : FALSE);
-			$privKey_isCert = (! empty($options["keys"]["private"]["isCert"])  ? TRUE : FALSE);
-		}
-		
-		$objenc = new XMLSecEnc();
+        $privKey = NULL;
+        $privKey_isFile = FALSE;
+        $privKey_isCert = FALSE;
+        
+        if (is_array($options)) {
+            $privKey = (! empty($options["keys"]["private"]["key"]) ? $options["keys"]["private"]["key"] : NULL);
+            $privKey_isFile = (! empty($options["keys"]["private"]["isFile"]) ? TRUE : FALSE);
+            $privKey_isCert = (! empty($options["keys"]["private"]["isCert"])  ? TRUE : FALSE);
+        }
+        
+        $objenc = new \XMLSecEnc();
 
-		$xpath = new DOMXPath($doc);
-		$envns = $doc->documentElement->namespaceURI;
-		$xpath->registerNamespace("soapns", $envns);
-		$xpath->registerNamespace("soapenc", "http://www.w3.org/2001/04/xmlenc#");
+        $xpath = new DOMXPath($doc);
+        $envns = $doc->documentElement->namespaceURI;
+        $xpath->registerNamespace("soapns", $envns);
+        $xpath->registerNamespace("soapenc", "http://www.w3.org/2001/04/xmlenc#");
 
-		$nodes = $xpath->query('/soapns:Envelope/soapns:Header/*[local-name()="Security"]/soapenc:EncryptedKey');
+        $nodes = $xpath->query('/soapns:Envelope/soapns:Header/*[local-name()="Security"]/soapenc:EncryptedKey');
 
-		$references = array();
-		if ($node = $nodes->item(0)) {
-			$objenc = new XMLSecEnc();
-			$objenc->setNode($node);
-		    if (! $objKey = $objenc->locateKey()) {
-		        throw new Exception("Unable to locate algorithm for this Encrypted Key");
-		    }
-		    $objKey->isEncrypted = TRUE;
-		    $objKey->encryptedCtx = $objenc;
-		    XMLSecEnc::staticLocateKeyInfo($objKey, $node);
-			if ($objKey && $objKey->isEncrypted) {
-				$objencKey = $objKey->encryptedCtx;
-				$objKey->loadKey($privKey, $privKey_isFile, $privKey_isCert);
-				$key = $objencKey->decryptKey($objKey);
-				$objKey->loadKey($key);
-			}
+        $references = array();
+        if ($node = $nodes->item(0)) {
+            $objenc = new \XMLSecEnc();
+            $objenc->setNode($node);
+            if (! $objKey = $objenc->locateKey()) {
+                throw new Exception("Unable to locate algorithm for this Encrypted Key");
+            }
+            $objKey->isEncrypted = TRUE;
+            $objKey->encryptedCtx = $objenc;
+            \XMLSecEnc::staticLocateKeyInfo($objKey, $node);
+            if ($objKey && $objKey->isEncrypted) {
+                $objencKey = $objKey->encryptedCtx;
+                $objKey->loadKey($privKey, $privKey_isFile, $privKey_isCert);
+                $key = $objencKey->decryptKey($objKey);
+                $objKey->loadKey($key);
+            }
 
-			$refnodes = $xpath->query('./soapenc:ReferenceList/soapenc:DataReference/@URI', $node);
-			foreach ($refnodes as $reference) {
-				$references[] = $reference->nodeValue;
-			}
-		}
+            $refnodes = $xpath->query('./soapenc:ReferenceList/soapenc:DataReference/@URI', $node);
+            foreach ($refnodes as $reference) {
+                $references[] = $reference->nodeValue;
+            }
+        }
 
-		foreach ($references AS $reference) {
-			$arUrl = parse_url($reference);
-			$reference = $arUrl['fragment'];
-			$query = '//*[@Id="'.$reference.'"]';
-			$nodes = $xpath->query($query);
-			$encData = $nodes->item(0);
+        foreach ($references AS $reference) {
+            $arUrl = parse_url($reference);
+            $reference = $arUrl['fragment'];
+            $query = '//*[@Id="'.$reference.'"]';
+            $nodes = $xpath->query($query);
+            $encData = $nodes->item(0);
 
-			if ($algo = $xpath->evaluate("string(./soapenc:EncryptionMethod/@Algorithm)", $encData)) {
-				$objKey = new XMLSecurityKey($algo);
-				$objKey->loadKey($key);
-			}
+            if ($algo = $xpath->evaluate("string(./soapenc:EncryptionMethod/@Algorithm)", $encData)) {
+                $objKey = new \XMLSecurityKey($algo);
+                $objKey->loadKey($key);
+            }
 
-			$objenc->setNode($encData);
-			$objenc->type = $encData->getAttribute("Type");
-			$decrypt = $objenc->decryptNode($objKey, TRUE);
-		}
-		
-		return TRUE;
+            $objenc->setNode($encData);
+            $objenc->type = $encData->getAttribute("Type");
+            $decrypt = $objenc->decryptNode($objKey, TRUE);
+        }
+        
+        return TRUE;
     }
 
     public function saveXML() { 

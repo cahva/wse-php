@@ -70,7 +70,7 @@ class WSASoap {
         $this->envelope = $doc->documentElement; 
         $this->soapNS = $this->envelope->namespaceURI; 
         $this->soapPFX = $this->envelope->prefix; 
-        $this->SOAPXPath = new DOMXPath($doc); 
+        $this->SOAPXPath = new \DOMXPath($doc); 
         $this->SOAPXPath->registerNamespace('wssoap', $this->soapNS); 
         $this->SOAPXPath->registerNamespace('wswsa', WSASoap::WSANS); 
          
